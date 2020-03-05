@@ -1,0 +1,3 @@
+---
+# defaults file for onr_diskconfig
+onr_diskconfig_lvols: "{{ diskconfig_lvm_lvs | default([]) }}"

@@ -1,0 +1,56 @@
+---
+# tasks file for onr_diskconfig
+
+
+## LVM START
+- name: Install lvm packages
+  package:
+    name: "{{ item.name }}"
+    state: present
+  with_items:
+    - name: lvm2
+  when: onr_diskconfig_lvols | length > 0
+  become: yes
+
+- name: Create Volume Groups
+  lvg:
+    vg: "{{ item.vg }}"
+    pvs: "{{ item.pvs }}"
+  with_items: "{{ onr_diskconfig_lvols }}"
+  become: yes
+
+- name: Create logical volumes
+  lvol:
+    vg: "{{ item.vg }}"
+    lv: "{{ item.lv }}"
+    size: "{{ item.size }}"
+    pvs: "{{ item.pvs }}"
+  with_items: "{{ onr_diskconfig_lvols }}"
+  become: yes
+
+- name: Create xfs filesystem on lvm volumes 
+  filesystem:
+    fstype: "{{ item.fstype }}"
+    dev: /dev/{{ item.vg }}/{{ item.lv }}
+  with_items: "{{ onr_diskconfig_lvols }}"
+  become: yes
+
+- name: Create mount points
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+  with_items: "{{ onr_diskconfig_lvols }}"
+  become: yes
+
+- name: Mount and bind a volume
+  mount:
+    path: "{{ item.path }}"
+    src: /dev/{{ item.vg }}/{{ item.lv }}
+    state: mounted
+    fstype: "{{ item.fstype }}"
+  with_items: "{{ onr_diskconfig_lvols }}"
+  become: yes
+
+## LVM END
